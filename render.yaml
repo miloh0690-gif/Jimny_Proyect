@@ -1,0 +1,19 @@
+# Blueprint de Render para Jimny Gear.
+# Sitio estatico puro: no hay build step, Render sirve los archivos tal cual.
+#
+# Para crearlo desde la CLI/API:
+#   curl -X POST https://api.render.com/v1/syncs \
+#     -H "Authorization: Bearer $RENDER_API_KEY" \
+#     -H 'Content-Type: application/json' \
+#     -d '{"Blueprint": "<pega el contenido de este archivo>", "repo": "miloh0690-gif/Jimny_Proyect"}'
+#
+# O desde la web: New > Blueprint > conectar el repo.
+
+services:
+  - type: static
+    name: jimny-gear
+    runtime: static
+    buildCommand: ""
+    staticPublishPath: ./
+    pullRequestPreviewsEnabled: true
+    autoDeploy: true

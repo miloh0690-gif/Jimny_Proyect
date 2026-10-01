@@ -1,0 +1,24 @@
+# Headers de cache para GitHub Pages.
+#
+# IMPORTANTE: GitHub Pages NO lee este archivo. Se incluye como documentacion
+# de la politica de cache que aplica el proyecto, y como config lista para
+# copiar si el hosting cambia (Netlify, Cloudflare Pages, Render con _headers).
+#
+# Politica aplicada en este proyecto:
+#   - vendor/ y el .glb son inmutables (el nombre del archivo no cambia nunca)
+#     -> se cachean 1 ano, immutable. En la segunda visita no se descarga nada.
+#   - index.html SI cambia con cada despliegue -> nunca se cachea, para que
+#     los usuarios reciban la version nueva al instante.
+
+/vendor/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.glb
+  Cache-Control: public, max-age=31536000, immutable
+
+/index.html
+  Cache-Control: no-cache, must-revalidate
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
