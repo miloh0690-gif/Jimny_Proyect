@@ -144,8 +144,13 @@ const OPTS={
  escalera:['Sin escalera|0','Escalera aluminio|700','Escalera negra|650','Escalera + portaequipaje|1900']
 };
 const PAINTS=[['Amarillo original','#e3ff3a'],['Rojo','#d3121a'],['Gris','#6f757c'],['Negro','#0b0b0c'],['Verde selva','#3f5a3a'],['Blanco','#ecedef']];
-/* Posiciones (pulgadas, auto centrado; +z = frente). Ajusta aquí si una pieza queda desalineada. */
-const P={wheels:[[1,45],[-1,45],[1,-40],[-1,-40]],wy:-20,wx:32.8,front:66.6,gy:4.5,lightX:19.5,lightY:5.5};
+/* Posiciones de las piezas. Auto centrado; +z = frente.
+   Se derivan del bounding box real del modelo al cargar (ver measure()), no se
+   fijan a mano: el .glb tiene su propia escala y si cambia el modelo estas
+   coordenadas se adaptan solas.
+   K son factores de ajuste sobre la caja, para corregir a ojo sin medir. */
+const K={track:.86,ride:.55,wbase:.58,rear:.55,ground:.02,nose:.99,groundline:.30,lamps:.42};
+let P={wheels:[],wy:0,wx:0,front:0,gy:0,lightX:0,lightY:0};
 /* ================================================================ */
 const T=THREE,$=s=>document.querySelector(s);
 const ICON={
@@ -175,6 +180,7 @@ const controls=new T.OrbitControls(camera,renderer.domElement);
 controls.enableDamping=true;controls.enablePan=false;controls.minDistance=90;controls.maxDistance=320;controls.maxPolarAngle=1.72;
 controls.target.set(0,-4,0);controls.autoRotate=true;controls.autoRotateSpeed=.7;
 const VIEWS={front:[75,10,165],side:[178,4,26],rear:[-80,20,-175],up:[0,230,90],down:[120,-24,120],home:[135,32,150]};
+/* Las vistas se reescalan al tamaño real del modelo en measureScale(). */
 camera.position.set(...VIEWS.home);
 let goal=null;
 controls.addEventListener('start',()=>{controls.autoRotate=false;goal=null});
@@ -197,35 +203,43 @@ const M=(c,m=.6,r=.4,e)=>new T.MeshStandardMaterial({color:c,metalness:m,roughne
 const mesh=(g,m,x=0,y=0,z=0,rx=0,ry=0,rz=0)=>{const o=new T.Mesh(g,m);o.position.set(x,y,z);o.rotation.set(rx,ry,rz);o.castShadow=true;return o};
 const B=(w,h,d)=>new T.BoxGeometry(w,h,d),C=(r,l,s=20)=>new T.CylinderGeometry(r,r,l,s);
 let bodyMat=new T.MeshStandardMaterial({color:'#e3ff3a'}); // se reemplaza al cargar el modelo
+/* Medidas del modelo que se derivan de su bounding box. Se rellenan en
+   measure() antes de construir cualquier pieza. */
+let DIM={},floorSize=600;
+/* ---------- piezas de accesorios ---------- */
 const BUILD={
  parrillas:i=>{const g=new T.Group(),s=[0,['#050505','#232323'],['#111','#e0e0e0'],['#3b4222','#7c8a45']][i];if(!s)return g;
   g.add(mesh(B(24,10,1),M(s[0],.3,.6),0,P.gy,P.front));
   for(let k=-2;k<=2;k++)g.add(mesh(B(2.6,8,1.2),M(s[1],.8,.3),k*4.3,P.gy,P.front+.7));return g},
  ruedas:i=>{const g=new T.Group(),s=[0,['#0e0e0e','#3c3c40',6],['#15110d','#b87d3d',5],['#1b1b1b','#e6e6e6',8]][i];if(!s)return g;
-  P.wheels.forEach(([sx,z])=>{const w=new T.Group();w.position.set(sx*P.wx,P.wy,z);
-   w.add(mesh(C(12.4,.8,48),M(s[0],.4,.5),0,0,0,0,0,Math.PI/2));
-   w.add(mesh(new T.TorusGeometry(12.2,.7,10,48),M(s[1],.9,.25),0,0,0,0,Math.PI/2,0));
-   for(let k=0;k<s[2];k++){const a=k/s[2]*Math.PI*2;w.add(mesh(B(1.2,2.2,10.5),M(s[1],.9,.3),sx*.4,Math.sin(a)*5.6,Math.cos(a)*5.6,-a,0,0))}
+const r=DIM.tyre;                       // radio del neumático, medido
+   P.wheels.forEach(([sx,z])=>{const w=new T.Group();w.position.set(sx*P.wx,P.wy,z);
+    w.add(mesh(C(r,.8,48),M(s[0],.4,.5),0,0,0,0,0,Math.PI/2));
+w.add(mesh(new T.TorusGeometry(r-.2,.7,10,48),M(s[1],.9,.25),0,0,0,0,Math.PI/2,0));
+    for(let k=0;k<s[2];k++){const a=k/s[2]*Math.PI*2;w.add(mesh(B(1.2,2.2,r*.85),M(s[1],.9,.3),sx*.4,Math.sin(a)*r*.45,Math.cos(a)*r*.45,-a,0,0))}
    w.add(mesh(C(2.6,1.4,24),M(s[1],.9,.2),sx*.6,0,0,0,0,Math.PI/2));g.add(w)});return g},
- pisaderas:i=>{const g=new T.Group();if(!i)return g;
+pisaderas:i=>{const g=new T.Group();if(!i)return g;const x=P.wx*.93,y=DIM.sill,L=DIM.wheelbase*.5;
   [1,-1].forEach(sx=>{
-   if(i==1){g.add(mesh(C(1.3,44),M('#d9d9d9',1,.15),sx*30.5,-12.6,3,Math.PI/2));[-14,18].forEach(z=>g.add(mesh(B(3.6,.8,1.6),M('#222'),sx*29,-12.6,z)))}
-   else{g.add(mesh(B(5,1,44),i==2?M('#9aa0a6',.9,.3):M('#0d0d0d',.2,.8),sx*30,-12.8,3));
-    if(i==2)for(let z=-19;z<=25;z+=4)g.add(mesh(B(4.2,.3,1),M('#4b4f54'),sx*30,-12.2,z))}});return g},
- faros:i=>{const g=new T.Group();if(!i)return g;
-  if(i<3)[1,-1].forEach(sx=>g.add(mesh(new T.TorusGeometry(5.6,.5,10,40),M('#fff',0,.3,i==1?'#dff1ff':'#ffa01c'),sx*P.lightX,P.lightY,P.front)));
-  else{g.add(mesh(B(36,1.9,1.6),M('#111',.6,.4),0,-6.5,68.6));g.add(mesh(B(34,1.1,.4),M('#fff',0,.3,'#eaf4ff'),0,-6.5,69.5))}return g},
- guardabarros:i=>{const g=new T.Group();if(!i)return g;const w=i==2?5:3,mat=i==3?bodyMat:M('#101010',.2,.7);
-  P.wheels.forEach(([sx,z])=>g.add(mesh(new T.CylinderGeometry(21.4,21.4,w,40,1,true,.1*Math.PI,.8*Math.PI),mat,sx*(28.2+w/2),P.wy,z,0,0,Math.PI/2)));return g},
- escalera:i=>{const g=new T.Group();if(!i)return g;const mt=i==2?M('#0d0d0d',.3,.6):M('#b9bec4',1,.3);
-  [21,26.5].forEach(x=>g.add(mesh(C(.7,40,14),mt,x,12,-66.5)));
-  for(let k=0;k<8;k++)g.add(mesh(C(.6,5.5,12),mt,23.75,-6+k*5.2,-66.5,0,0,Math.PI/2));
-  if(i==3){const k=M('#0d0d0d',.4,.5),y=37.6;
-   [-25,25].forEach(x=>g.add(mesh(C(.6,68,12),k,x,y,-16,Math.PI/2)));
-   [-50,18].forEach(z=>g.add(mesh(C(.6,50,12),k,0,y,z,0,0,Math.PI/2)));
-   for(let z=-42;z<=10;z+=8.7)g.add(mesh(C(.5,50,10),k,0,y,z,0,0,Math.PI/2));
-   [[-24,-46],[24,-46],[-24,14],[24,14]].forEach(([x,z])=>g.add(mesh(B(1.6,2.4,1.6),k,x,36.2,z)))}
-  return g}
+    if(i==1){g.add(mesh(C(1.3,L*.92),M('#d9d9d9',1,.15),sx*x,y,L*.16,Math.PI/2));[-.32,.42].forEach(f=>g.add(mesh(B(3.6,.8,1.6),M('#222'),sx*(x-1),y,f*L)))}
+    else{g.add(mesh(B(5,1,L*.92),i==2?M('#9aa0a6',.9,.3):M('#0d0d0d',.2,.8),sx*(x-1),y-0.2,L*.16));
+     if(i==2)for(let f=-.42;f<=.56;f+=.09)g.add(mesh(B(4.2,.3,1),M('#4b4f54'),sx*(x-1),y+.6,f*L))}});return g},
+ faros:i=>{const g=new T.Group();if(!i)return g;const d=DIM.lampR,w=P.lightX;
+   if(i<3)[1,-1].forEach(sx=>g.add(mesh(new T.TorusGeometry(d,.5,10,40),M('#fff',0,.3,i==1?'#dff1ff':'#ffa01c'),sx*w,P.lightY,P.front)));
+   else{const bw=P.wx*1.9,zz=P.front+.4;
+    g.add(mesh(B(bw,1.9,1.6),M('#111',.6,.4),0,P.lightY-1.2,zz));
+    g.add(mesh(B(bw*.94,1.1,.4),M('#fff',0,.3,'#eaf4ff'),0,P.lightY-1.2,zz+.9))}return g},
+guardabarros:i=>{const g=new T.Group();if(!i)return g;const w=i==2?DIM.flareWide:DIM.flare,mat=i==3?bodyMat:M('#101010',.2,.7);
+   P.wheels.forEach(([sx,z])=>g.add(mesh(new T.CylinderGeometry(DIM.tyre*1.72,DIM.tyre*1.72,w,40,1,true,.1*Math.PI,.8*Math.PI),mat,sx*(P.wx+w/2),P.wy,z,0,0,Math.PI/2)));return g},
+escalera:i=>{const g=new T.Group();if(!i)return g;const mt=i==2?M('#0d0d0d',.3,.6):M('#b9bec4',1,.3);
+   const z=P.rear, h=DIM.height*.55, w=P.wx*.66, x=P.wx*.80, rail=DIM.ladderR;
+   [x-rail*2,x+rail*2].forEach(xx=>g.add(mesh(C(.7,h*.62,14),mt,xx,h*.31,z)));
+   for(let k=0;k<8;k++)g.add(mesh(C(.6,rail*4,h*.45),mt,x+rail*2,h*.09+k*(h*.11),z,0,0,Math.PI/2));
+   if(i==3){const k=M('#0d0d0d',.4,.5),y=h+.5;
+    [-1,1].forEach(sx=>g.add(mesh(C(.6,w*2.1,12),k,sx*w*.6,y,-z*.24,Math.PI/2)));
+    [-1,.36].forEach(f=>g.add(mesh(C(.6,w*1.5,12),k,0,y,f*z,0,0,Math.PI/2)));
+    for(let f=-.6;f<=.16;f+=.125)g.add(mesh(C(.5,w*1.5,10),k,0,y,f*z,0,0,Math.PI/2));
+    [[-1,-1],[1,-1],[-1,.3],[1,.3]].forEach(([sx,f])=>g.add(mesh(B(1.6,2.4,1.6),k,sx*w*.58,y-1.4,f*z)))}
+   return g}
 };
 
 /* ---------- estado y UI ---------- */
@@ -270,6 +284,41 @@ Object.keys(O).forEach(k=>O[k].forEach((o,i)=>{if(!i)return;const c=document.cre
  b1.onclick=()=>{active=k;setOpt(k,i);$('#configurador').scrollIntoView();goTo({parrillas:'front',faros:'front',escalera:'rear'}[k]||'side')};
  b2.onclick=()=>{cart[k]=o;cartUI();toast('Agregado al carrito')};$('#grid').appendChild(c)}));
 
+/* Deriva DIM y P de la caja real del modelo.
+   El .glb se centra en el origen, asi que despues de m.position = -centro:
+   la caja vale +-size/2 y el suelo queda en -size.y/2. */
+function measure(box,c){
+ const sx=(box.max.x-box.min.x)/2, sy=(box.max.y-box.min.y)/2, sz=(box.max.z-box.min.z)/2;
+ /* Radio del neumático: los aros del modelo rondan el 9% de la altura.
+    Se estima a partir de la altura, no del ancho, porque un Jimny es mas alto
+    que ancho segun el .glb. */
+ DIM.height=sy*2; DIM.halfW=sx; DIM.halfL=sz; DIM.tyre=sy*.34;
+ DIM.flare=DIM.tyre*.42; DIM.flareWide=DIM.flare*1.7; DIM.sill=-sy*.36;
+ DIM.lampR=sy*.16; DIM.ladderR=DIM.tyre*.15;
+ DIM.wheelbase=sz*2*K.wbase;
+ const track=sx*K.track;
+ P.wx=track; P.wy=-sy+Math.min(DIM.tyre,K.ride*sy*2);
+ P.wheels=[[1,sz*K.wbase],[-1,sz*K.wbase],[1,-sz*K.rear],[-1,-sz*K.rear]];
+ P.front=sz*K.nose; P.rear=-sz*.97;
+ P.gy=-sy*2*(1-K.groundline)*.5;
+ P.lightX=track*.66; P.lightY=DIM.sill+DIM.tyre*.55;
+ console.log('[jimny] caja',DIM.halfW.toFixed(2),'x',DIM.height.toFixed(2),'x',(sz*2).toFixed(2),
+   '| rueda r='+DIM.tyre.toFixed(2),'via='+P.wx.toFixed(2),'y='+P.wy.toFixed(2));
+ measureScale(sz*2);
+}
+/* Reajusta camara, controles, luz y niebla al largo real del modelo. */
+function measureScale(len){
+ const f=len/142.41;                       // el .glb original mide 142.41
+ for(const k in VIEWS)VIEWS[k]=VIEWS[k].map(v=>v*f);
+ camera.far=2000*f;camera.updateProjectionMatrix();
+ controls.minDistance=90*f;controls.maxDistance=320*f;
+ sun.position.set(80,150,70).multiplyScalar(f);
+ Object.assign(sun.shadow.camera,{left:-120*f,right:120*f,top:120*f,bottom:-120*f,near:10*f,far:400*f});
+ sun.shadow.camera.updateProjectionMatrix();
+ scene.fog=new T.Fog(0x0e1013,260*f,620*f);
+ floorSize=600*f;
+}
+
 /* ---------- carga del modelo ---------- */
 /* jimny.glb declara extensionsRequired: ["KHR_draco_mesh_compression"] (65 de 95
    primitivas comprimidas). Sin DRACOLoader el GLTFLoader no puede reconstruir la
@@ -286,8 +335,9 @@ gltfLoader.load(SHOP.model,gltf=>{
   const mats=Array.isArray(o.material)?o.material:[o.material];
   mats.forEach(x=>{if(x.name==='Color_F03'){bodyMat=x;x.metalness=.45;x.roughness=.28}})}});
  car.add(m);
+ measure(box,c);
  const fy=box.min.y-c.y-.05;
- const floor=new T.Mesh(new T.CircleGeometry(600,64),new T.MeshStandardMaterial({color:0x14161a,roughness:.45,metalness:.3}));
+ const floor=new T.Mesh(new T.CircleGeometry(floorSize,64),new T.MeshStandardMaterial({color:0x14161a,roughness:.45,metalness:.3}));
  floor.rotation.x=-Math.PI/2;floor.position.y=fy;floor.receiveShadow=true;scene.add(floor);
  scene.fog=new T.Fog(0x0e1013,260,620);
  Object.keys(OPTS).forEach(k=>setOpt(k,0));setPaint(0);ui();
