@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jimny Gear · Configurador 3D de accesorios</title>
+<style>
+:root{--bg:#0e1013;--glass:rgba(255,255,255,.07);--line:rgba(255,255,255,.17);--tx:#f2f3f5;--mut:#a3a8b0;--acc:#e5322d}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--tx);font:15px/1.5 "Segoe UI",system-ui,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid #fff;outline-offset:2px}
+header{position:fixed;inset:0 0 auto;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 4vw;background:linear-gradient(#0e1013e6,#0e101300)}
+.logo{font:italic 800 28px/1 Georgia,serif;letter-spacing:-.5px}
+nav{display:flex;gap:28px}
+nav a,#cartBtn{color:var(--tx);text-decoration:none;font-size:13px;letter-spacing:.06em;text-transform:uppercase;padding:6px 0;border:0;border-bottom:2px solid transparent;background:none}
+nav a:hover,#cartBtn:hover{border-color:var(--tx)}
+#configurador{position:relative;height:100vh;min-height:640px;overflow:hidden;background:radial-gradient(ellipse at 50% 35%,#3a3f47 0,#16181c 60%,#0e1013 100%)}
+#wrap{position:absolute;inset:0}
+#wrap canvas{display:block;width:100%;height:100%;touch-action:none}
+.hero{position:absolute;top:78px;left:0;right:0;text-align:center;pointer-events:none;z-index:2}
+.hero h1{font-size:clamp(20px,3vw,32px);font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+.hero p{font-size:clamp(14px,1.8vw,20px);letter-spacing:.1em;text-transform:uppercase;color:#dfe2e6}
+.side{position:absolute;top:150px;display:flex;flex-direction:column;gap:14px;z-index:3}
+.side.l{left:4vw}.side.r{right:4vw}
+.cat{width:96px;height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:var(--glass);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(10px);font-size:11px;letter-spacing:.06em;text-transform:uppercase;transition:background .2s,border-color .2s}
+.cat svg{width:38px;height:38px;stroke:#fff;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.cat:hover{background:rgba(255,255,255,.14)}
+.cat[aria-pressed=true]{border-color:#fff;background:rgba(255,255,255,.18)}
+.cat b{position:absolute;margin-top:-78px;margin-left:60px;background:var(--acc);border-radius:9px;min-width:18px;height:18px;font-size:11px;line-height:18px;text-align:center;display:none}
+.cat.on b{display:block}
+.paint{position:absolute;right:calc(4vw + 120px);bottom:18vh;z-index:3;padding:10px 16px;background:var(--glass);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(10px);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.dots{display:flex;gap:9px;margin-top:8px}
+.dot{width:22px;height:22px;border-radius:50%;border:2px solid transparent;box-shadow:0 0 0 1px #fff5}
+.dot[aria-pressed=true]{border-color:#fff}
+.dock{position:absolute;left:50%;bottom:3.5vh;transform:translateX(-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:12px;width:min(92vw,720px)}
+#chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;min-height:38px}
+.chip{padding:7px 14px;border-radius:20px;background:var(--glass);border:1px solid var(--line);backdrop-filter:blur(10px);font-size:13px}
+.chip small{color:var(--mut);margin-left:6px}
+.chip[aria-pressed=true]{background:#fff;color:#111;border-color:#fff}.chip[aria-pressed=true] small{color:#444}
+.row{display:flex;align-items:center;gap:14px}
+.views{display:flex;border:1px solid var(--line);border-radius:30px;background:var(--glass);backdrop-filter:blur(10px)}
+.views button{background:none;border:0;padding:12px 26px;font-size:13px;letter-spacing:.08em;text-transform:uppercase}
+.views button+button{border-left:1px solid var(--line)}
+.buy{display:flex;align-items:center;gap:12px;background:var(--acc);border:0;border-radius:30px;padding:12px 22px;font-weight:600}
+.buy span{opacity:.85;font-weight:400}
+#load{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0e1013;transition:opacity .5s;text-align:center;padding:24px}
+#load i{display:block;height:3px;width:220px;background:#fff2}#load i b{display:block;height:100%;width:0;background:#fff}
+section.pg{padding:90px 4vw}
+h2{font-size:28px;margin-bottom:6px}.sub{color:var(--mut);margin-bottom:28px}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.card{background:#171a1e;border:1px solid #ffffff14;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:6px}
+.card svg{width:34px;height:34px;stroke:#fff;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;margin-bottom:6px}
+.card .k{color:var(--mut);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.card .p{font-size:20px;font-weight:700;margin:4px 0 8px}
+.card .a{display:flex;gap:8px;margin-top:auto}
+.card button{flex:1;padding:9px;border-radius:8px;border:1px solid var(--line);background:none;font-size:13px}
+.card button.f{background:#fff;color:#111;border-color:#fff}
+#nosotros p{max-width:64ch;color:#cfd3d8;margin-bottom:12px}
+footer{padding:24px 4vw;color:var(--mut);font-size:12px;border-top:1px solid #ffffff14}
+footer a{color:var(--mut)}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(400px,100vw);z-index:40;background:#14171b;border-left:1px solid var(--line);padding:24px;display:flex;flex-direction:column;gap:14px;transform:translateX(105%);transition:transform .3s}
+#drawer.open{transform:none}
+#lines{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px}
+.line{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid #ffffff14}
+.line button{background:none;border:0;color:var(--mut)}
+#toast{position:fixed;left:50%;top:70px;transform:translate(-50%,-20px);opacity:0;z-index:50;background:#fff;color:#111;padding:8px 18px;border-radius:20px;font-size:13px;transition:.3s;pointer-events:none}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:860px){
+ nav{gap:14px}nav a{font-size:11px}
+ #configurador{height:auto;min-height:0;padding-bottom:24px}
+ #wrap{position:relative;height:56vh;margin-top:120px}
+ .hero{top:70px}
+ .side{position:static;flex-direction:row;justify-content:center;gap:8px;margin:8px 3vw 0}
+ .side.l,.side.r{left:auto;right:auto}
+ .cat{width:31%;height:76px;font-size:10px}.cat svg{width:28px;height:28px}
+ .cat b{margin-top:-58px;margin-left:44px}
+ .paint{position:static;margin:12px 3vw 0;display:flex;align-items:center;justify-content:space-between}.dots{margin:0}
+ .dock{position:static;transform:none;margin:14px auto 0}
+ header .logo{font-size:22px}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header>
+ <div class="logo">Jimny</div>
+ <nav><a href="#catalogo">Catálogo</a><a href="#configurador">Configurador 3D</a><a href="#nosotros">Sobre nosotros</a></nav>
+ <button id="cartBtn" aria-label="Abrir carrito">Carrito (<span id="cartN">0</span>)</button>
+</header>
+
+<section id="configurador" aria-label="Configurador 3D">
+ <div class="hero"><h1>Tu Jimny, tu aventura. Configuración 3D.</h1><p>Personaliza al instante.</p></div>
+ <div id="wrap"></div>
+ <div class="side l" id="sl"></div>
+ <div class="side r" id="sr"></div>
+ <div class="paint">Color<div class="dots" id="dots"></div></div>
+ <div class="dock">
+  <div id="chips" role="group" aria-label="Opciones"></div>
+  <div class="row">
+   <div class="views"><button id="vUp">Arriba</button><button id="vDown">Abajo</button></div>
+   <button class="buy" id="add">Añadir al carrito <span id="tot">Bs 0</span></button>
+  </div>
+ </div>
+ <div id="load"><div id="loadTxt">Cargando tu Jimny…</div><i><b id="bar"></b></i></div>
+</section>
+
+<section class="pg" id="catalogo">
+ <h2>Catálogo</h2><p class="sub">Todos los accesorios para Suzuki Jimny. Pruébalos en 3D antes de comprar.</p>
+ <div id="grid"></div>
+</section>
+
+<section class="pg" id="nosotros">
+ <h2>Sobre nosotros</h2>
+ <p>Somos especialistas en accesorios para el Suzuki Jimny. Elige tus piezas, míralas puestas en tu auto y envíanos tu pedido por WhatsApp.</p>
+ <p>Edita este texto con la historia, dirección y horarios de tu tienda.</p>
+</section>
+
+<footer>Modelo 3D: “2018 Suzuki Jimny (unrefined version)” por <a href="https://sketchfab.com/3d-models/2018-suzuki-jimny-unrefined-version-ee7a2a2d6a104fffadd3110044af2389">@ShreyanshChaurasia_13</a>, licencia <a href="http://creativecommons.org/licenses/by/4.0/">CC-BY 4.0</a>. Marca Suzuki y Jimny pertenecen a sus propietarios.</footer>
+
+<aside id="drawer" aria-label="Carrito">
+ <div class="row" style="justify-content:space-between"><h2 style="margin:0;font-size:22px">Tu carrito</h2><button id="close" style="background:none;border:0;font-size:22px" aria-label="Cerrar">×</button></div>
+ <div id="lines"></div>
+ <div class="row" style="justify-content:space-between;font-size:18px"><b>Total</b><b id="ctot">Bs 0</b></div>
+ <button class="buy" id="wa" style="justify-content:center">Pedir por WhatsApp</button>
+</aside>
+<div id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+/* ============ CONFIGURACIÓN DE LA TIENDA (edítala) ============ */
+const SHOP={whatsapp:'59100000000',cur:'Bs',model:'jimny.glb'};
+/* Precios y nombres de cada accesorio. El índice 0 siempre es "Original" (sin accesorio). */
+const OPTS={
+ parrillas:['Original|0','Rejilla negra mate|180','Rejilla cromada|240','Rejilla militar|260'],
+ ruedas:['Originales|0','Aros negros 6 radios|2600','Aros bronce 5 radios|3400','Aros cromados 8 radios|2900'],
+ pisaderas:['Originales|0','Tubulares cromadas|650','Aluminio antideslizante|720','Negras|500'],
+ faros:['Originales|0','Aros LED blancos|350','Aros LED ámbar|350','Barra LED frontal|480'],
+ guardabarros:['Originales|0','Negros estándar|800','Negros anchos|1300','Color de carrocería|1100'],
+ escalera:['Sin escalera|0','Escalera aluminio|700','Escalera negra|650','Escalera + portaequipaje|1900']
+};
+const PAINTS=[['Amarillo original','#e3ff3a'],['Rojo','#d3121a'],['Gris','#6f757c'],['Negro','#0b0b0c'],['Verde selva','#3f5a3a'],['Blanco','#ecedef']];
+/* Posiciones (pulgadas, auto centrado; +z = frente). Ajusta aquí si una pieza queda desalineada. */
+const P={wheels:[[1,45],[-1,45],[1,-40],[-1,-40]],wy:-20,wx:32.8,front:66.6,gy:4.5,lightX:19.5,lightY:5.5};
+/* ================================================================ */
+const T=THREE,$=s=>document.querySelector(s);
+const ICON={
+ parrillas:'<rect x="4" y="12" width="32" height="14" rx="4"/><path d="M12 15v8M17 15v8M22 15v8M27 15v8"/>',
+ ruedas:'<circle cx="20" cy="20" r="15"/><circle cx="20" cy="20" r="4"/><path d="M20 5v11M20 24v11M5 20h11M24 20h11M9 9l8 8M23 23l8 8M31 9l-8 8M17 23l-8 8"/>',
+ pisaderas:'<path d="M5 26c0-4 4-6 9-8l8-4c4-2 9 0 10 4 1 3-2 6-6 7l-14 3c-4 1-7 0-7-2z"/>',
+ faros:'<circle cx="26" cy="20" r="9"/><path d="M4 12h12M6 20h10M4 28h12"/>',
+ guardabarros:'<path d="M5 30c0-14 8-22 20-22 5 0 9 1 11 3-6 0-10 3-11 9-1 6-3 9-8 10H5z"/>',
+ escalera:'<path d="M12 4l-4 32M28 4l4 32M10 12h20M9 20h22M8 28h24"/>'
+};
+const NAMES={parrillas:'Parrillas',ruedas:'Ruedas',pisaderas:'Pisaderas',faros:'Faros',guardabarros:'Guardabarros',escalera:'Escalera'};
+const svg=k=>`<svg viewBox="0 0 40 40" aria-hidden="true">${ICON[k]}</svg>`;
+const O={};for(const k in OPTS)O[k]=OPTS[k].map(s=>{const[a,b]=s.split('|');return{n:a,p:+b}});
+const money=n=>`${SHOP.cur} ${n.toLocaleString('es-BO')}`;
+
+/* ---------- escena ---------- */
+const wrap=$('#wrap');
+const renderer=new T.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.outputEncoding=T.sRGBEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
+renderer.setClearColor(0x000000,0);
+wrap.appendChild(renderer.domElement);
+const scene=new T.Scene();
+const camera=new T.PerspectiveCamera(32,1,1,2000);
+const controls=new T.OrbitControls(camera,renderer.domElement);
+controls.enableDamping=true;controls.enablePan=false;controls.minDistance=90;controls.maxDistance=320;controls.maxPolarAngle=1.72;
+controls.target.set(0,-4,0);controls.autoRotate=true;controls.autoRotateSpeed=.7;
+const VIEWS={front:[75,10,165],side:[178,4,26],rear:[-80,20,-175],up:[0,230,90],down:[120,-24,120],home:[135,32,150]};
+camera.position.set(...VIEWS.home);
+let goal=null;
+controls.addEventListener('start',()=>{controls.autoRotate=false;goal=null});
+const goTo=v=>{controls.autoRotate=false;goal=new T.Vector3(...VIEWS[v])};
+
+/* entorno de reflejos */
+{const pm=new T.PMREMGenerator(renderer),es=new T.Scene();
+ es.add(new T.Mesh(new T.BoxGeometry(500,220,500),new T.MeshBasicMaterial({color:0x1b2027,side:T.BackSide})));
+ [[0,90,0,200,4,120],[-200,30,0,4,60,200],[200,30,0,4,60,200]].forEach(([x,y,z,w,h,d])=>{const m=new T.Mesh(new T.BoxGeometry(w,h,d),new T.MeshBasicMaterial({color:new T.Color(7,7,7.5)}));m.position.set(x,y,z);es.add(m)});
+ scene.environment=pm.fromScene(es,.03).texture}
+const sun=new T.DirectionalLight(0xffffff,1.2);sun.position.set(80,150,70);sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-120,right:120,top:120,bottom:-120,near:10,far:400});sun.shadow.bias=-.0004;
+scene.add(sun,new T.HemisphereLight(0xdfe6ff,0x20242a,.5));
+
+function resize(){const w=wrap.clientWidth,h=wrap.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.fov=w/h<1?52:32;camera.updateProjectionMatrix()}
+new ResizeObserver(resize).observe(wrap);resize();
+
+/* ---------- piezas de accesorios ---------- */
+const M=(c,m=.6,r=.4,e)=>new T.MeshStandardMaterial({color:c,metalness:m,roughness:r,emissive:e||0x000000,emissiveIntensity:e?2.2:0,side:T.DoubleSide});
+const mesh=(g,m,x=0,y=0,z=0,rx=0,ry=0,rz=0)=>{const o=new T.Mesh(g,m);o.position.set(x,y,z);o.rotation.set(rx,ry,rz);o.castShadow=true;return o};
+const B=(w,h,d)=>new T.BoxGeometry(w,h,d),C=(r,l,s=20)=>new T.CylinderGeometry(r,r,l,s);
+let bodyMat=new T.MeshStandardMaterial({color:'#e3ff3a'}); // se reemplaza al cargar el modelo
+const BUILD={
+ parrillas:i=>{const g=new T.Group(),s=[0,['#050505','#232323'],['#111','#e0e0e0'],['#3b4222','#7c8a45']][i];if(!s)return g;
+  g.add(mesh(B(24,10,1),M(s[0],.3,.6),0,P.gy,P.front));
+  for(let k=-2;k<=2;k++)g.add(mesh(B(2.6,8,1.2),M(s[1],.8,.3),k*4.3,P.gy,P.front+.7));return g},
+ ruedas:i=>{const g=new T.Group(),s=[0,['#0e0e0e','#3c3c40',6],['#15110d','#b87d3d',5],['#1b1b1b','#e6e6e6',8]][i];if(!s)return g;
+  P.wheels.forEach(([sx,z])=>{const w=new T.Group();w.position.set(sx*P.wx,P.wy,z);
+   w.add(mesh(C(12.4,.8,48),M(s[0],.4,.5),0,0,0,0,0,Math.PI/2));
+   w.add(mesh(new T.TorusGeometry(12.2,.7,10,48),M(s[1],.9,.25),0,0,0,0,Math.PI/2,0));
+   for(let k=0;k<s[2];k++){const a=k/s[2]*Math.PI*2;w.add(mesh(B(1.2,2.2,10.5),M(s[1],.9,.3),sx*.4,Math.sin(a)*5.6,Math.cos(a)*5.6,-a,0,0))}
+   w.add(mesh(C(2.6,1.4,24),M(s[1],.9,.2),sx*.6,0,0,0,0,Math.PI/2));g.add(w)});return g},
+ pisaderas:i=>{const g=new T.Group();if(!i)return g;
+  [1,-1].forEach(sx=>{
+   if(i==1){g.add(mesh(C(1.3,44),M('#d9d9d9',1,.15),sx*30.5,-12.6,3,Math.PI/2));[-14,18].forEach(z=>g.add(mesh(B(3.6,.8,1.6),M('#222'),sx*29,-12.6,z)))}
+   else{g.add(mesh(B(5,1,44),i==2?M('#9aa0a6',.9,.3):M('#0d0d0d',.2,.8),sx*30,-12.8,3));
+    if(i==2)for(let z=-19;z<=25;z+=4)g.add(mesh(B(4.2,.3,1),M('#4b4f54'),sx*30,-12.2,z))}});return g},
+ faros:i=>{const g=new T.Group();if(!i)return g;
+  if(i<3)[1,-1].forEach(sx=>g.add(mesh(new T.TorusGeometry(5.6,.5,10,40),M('#fff',0,.3,i==1?'#dff1ff':'#ffa01c'),sx*P.lightX,P.lightY,P.front)));
+  else{g.add(mesh(B(36,1.9,1.6),M('#111',.6,.4),0,-6.5,68.6));g.add(mesh(B(34,1.1,.4),M('#fff',0,.3,'#eaf4ff'),0,-6.5,69.5))}return g},
+ guardabarros:i=>{const g=new T.Group();if(!i)return g;const w=i==2?5:3,mat=i==3?bodyMat:M('#101010',.2,.7);
+  P.wheels.forEach(([sx,z])=>g.add(mesh(new T.CylinderGeometry(21.4,21.4,w,40,1,true,.1*Math.PI,.8*Math.PI),mat,sx*(28.2+w/2),P.wy,z,0,0,Math.PI/2)));return g},
+ escalera:i=>{const g=new T.Group();if(!i)return g;const mt=i==2?M('#0d0d0d',.3,.6):M('#b9bec4',1,.3);
+  [21,26.5].forEach(x=>g.add(mesh(C(.7,40,14),mt,x,12,-66.5)));
+  for(let k=0;k<8;k++)g.add(mesh(C(.6,5.5,12),mt,23.75,-6+k*5.2,-66.5,0,0,Math.PI/2));
+  if(i==3){const k=M('#0d0d0d',.4,.5),y=37.6;
+   [-25,25].forEach(x=>g.add(mesh(C(.6,68,12),k,x,y,-16,Math.PI/2)));
+   [-50,18].forEach(z=>g.add(mesh(C(.6,50,12),k,0,y,z,0,0,Math.PI/2)));
+   for(let z=-42;z<=10;z+=8.7)g.add(mesh(C(.5,50,10),k,0,y,z,0,0,Math.PI/2));
+   [[-24,-46],[24,-46],[-24,14],[24,14]].forEach(([x,z])=>g.add(mesh(B(1.6,2.4,1.6),k,x,36.2,z)))}
+  return g}
+};
+
+/* ---------- estado y UI ---------- */
+const sel={},slot={};let active='parrillas',paint=0;const cart={};
+Object.keys(OPTS).forEach(k=>sel[k]=0);
+function setOpt(k,i){sel[k]=i;if(slot[k])car.remove(slot[k]);slot[k]=BUILD[k](i);car.add(slot[k]);ui()}
+function setPaint(i){paint=i;bodyMat.color.set(PAINTS[i][1]);ui()}
+function total(){return Object.keys(sel).reduce((s,k)=>s+O[k][sel[k]].p,0)}
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),1800)}
+const car=new T.Group();scene.add(car);
+
+const half=Object.keys(OPTS).length/2;
+Object.keys(OPTS).forEach((k,n)=>{const b=document.createElement('button');b.className='cat';b.dataset.k=k;b.innerHTML=`${svg(k)}${NAMES[k]}<b>✓</b>`;
+ b.onclick=()=>{active=k;ui();goTo({parrillas:'front',faros:'front',ruedas:'side',pisaderas:'side',guardabarros:'side',escalera:'rear'}[k])};
+ $(n<half?'#sl':'#sr').appendChild(b)});
+PAINTS.forEach(([n,c],i)=>{const b=document.createElement('button');b.className='dot';b.style.background=c;b.title=n;b.setAttribute('aria-label',n);b.onclick=()=>setPaint(i);$('#dots').appendChild(b)});
+function ui(){
+ document.querySelectorAll('.cat').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.k==active);b.classList.toggle('on',sel[b.dataset.k]>0)});
+ document.querySelectorAll('.dot').forEach((d,i)=>d.setAttribute('aria-pressed',i==paint));
+ $('#chips').innerHTML='';O[active].forEach((o,i)=>{const c=document.createElement('button');c.className='chip';c.setAttribute('aria-pressed',sel[active]==i);
+  c.innerHTML=`${o.n}${o.p?`<small>${money(o.p)}</small>`:''}`;c.onclick=()=>setOpt(active,i);$('#chips').appendChild(c)});
+ $('#tot').textContent=money(total());
+}
+$('#vUp').onclick=()=>goTo('up');$('#vDown').onclick=()=>goTo('down');
+
+/* carrito */
+function cartUI(){const ks=Object.keys(cart);$('#cartN').textContent=ks.length;
+ $('#lines').innerHTML=ks.length?'':'<p style="color:var(--mut)">Aún no agregaste accesorios. Elige piezas en el configurador y toca “Añadir al carrito”.</p>';
+ ks.forEach(k=>{const d=document.createElement('div');d.className='line';d.innerHTML=`<div><div>${cart[k].n}</div><small style="color:var(--mut)">${NAMES[k]}</small></div><div>${money(cart[k].p)} <button aria-label="Quitar">×</button></div>`;
+  d.querySelector('button').onclick=()=>{delete cart[k];cartUI()};$('#lines').appendChild(d)});
+ $('#ctot').textContent=money(ks.reduce((s,k)=>s+cart[k].p,0))}
+$('#add').onclick=()=>{let n=0;Object.keys(sel).forEach(k=>{if(sel[k]>0){cart[k]=O[k][sel[k]];n++}});cartUI();toast(n?'Configuración añadida al carrito':'Elige al menos un accesorio')};
+$('#cartBtn').onclick=()=>$('#drawer').classList.add('open');$('#close').onclick=()=>$('#drawer').classList.remove('open');
+$('#wa').onclick=()=>{const ks=Object.keys(cart);if(!ks.length)return toast('Tu carrito está vacío');
+ const t=`Hola, quiero pedir para mi Suzuki Jimny (color ${PAINTS[paint][0]}):\n`+ks.map(k=>`- ${NAMES[k]}: ${cart[k].n} (${money(cart[k].p)})`).join('\n')+`\nTotal: ${$('#ctot').textContent}`;
+ open(`https://wa.me/${SHOP.whatsapp}?text=${encodeURIComponent(t)}`,'_blank')};
+
+/* catálogo */
+Object.keys(O).forEach(k=>O[k].forEach((o,i)=>{if(!i)return;const c=document.createElement('div');c.className='card';
+ c.innerHTML=`${svg(k)}<div class="k">${NAMES[k]}</div><div>${o.n}</div><div class="p">${money(o.p)}</div><div class="a"><button>Ver en 3D</button><button class="f">Agregar</button></div>`;
+ const[b1,b2]=c.querySelectorAll('button');
+ b1.onclick=()=>{active=k;setOpt(k,i);$('#configurador').scrollIntoView();goTo({parrillas:'front',faros:'front',escalera:'rear'}[k]||'side')};
+ b2.onclick=()=>{cart[k]=o;cartUI();toast('Agregado al carrito')};$('#grid').appendChild(c)}));
+
+/* ---------- carga del modelo ---------- */
+new T.GLTFLoader().load(SHOP.model,gltf=>{
+ const m=gltf.scene,box=new T.Box3().setFromObject(m),c=box.getCenter(new T.Vector3());
+ m.position.set(-c.x,-c.y,-c.z);
+ m.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;
+  const mats=Array.isArray(o.material)?o.material:[o.material];
+  mats.forEach(x=>{if(x.name==='Color_F03'){bodyMat=x;x.metalness=.45;x.roughness=.28}})}});
+ car.add(m);
+ const fy=box.min.y-c.y-.05;
+ const floor=new T.Mesh(new T.CircleGeometry(600,64),new T.MeshStandardMaterial({color:0x14161a,roughness:.45,metalness:.3}));
+ floor.rotation.x=-Math.PI/2;floor.position.y=fy;floor.receiveShadow=true;scene.add(floor);
+ scene.fog=new T.Fog(0x0e1013,260,620);
+ Object.keys(OPTS).forEach(k=>setOpt(k,0));setPaint(0);ui();
+ $('#load').style.opacity=0;setTimeout(()=>$('#load').remove(),500);
+},e=>{if(e.total)$('#bar').style.width=(e.loaded/e.total*100)+'%'},
+err=>{$('#loadTxt').innerHTML='No se pudo cargar <b>'+SHOP.model+'</b>.<br>Abre el sitio desde un servidor (no con doble clic) y verifica que el archivo esté junto a index.html.'});
+
+(function loop(){requestAnimationFrame(loop);
+ if(goal){camera.position.lerp(goal,.07);if(camera.position.distanceTo(goal)<.5)goal=null}
+ controls.update();renderer.render(scene,camera)})();
+cartUI();
+</script>
+</body>
+</html>
