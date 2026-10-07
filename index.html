@@ -300,10 +300,15 @@ function measure(box,c){
  P.wx=track; P.wy=-sy+Math.min(DIM.tyre,K.ride*sy*2);
  P.wheels=[[1,sz*K.wbase],[-1,sz*K.wbase],[1,-sz*K.rear],[-1,-sz*K.rear]];
  P.front=sz*K.nose; P.rear=-sz*.97;
- /* Altura de la parrilla: el centro de la boca del bumper. Medido en el .glb,
-     la cara del bumper va de Y=-16.7 (borde inferior) a Y=-6.0 (borde superior),
-     o sea 30% de la media-altura por debajo del centro de la caja. */
-  P.gy=-sy*K.groundline;
+ /* Altura de la parrilla: sentada en el labio inferior del bumper. Medido con
+     raycast sobre el .glb (malla Material2_12, la del bumper): la cara va de
+     Y=-16.85 (labio inferior) a Y=-5.3, o sea 47.6% de la media-altura por
+     debajo del centro, y la boca central (el hueco) de Y=-13.45 a Y=-7.85, con
+     x de -13.6 a +13.7. El centro de la boca es justo -sy*K.groundline, pero
+     con ahi la parrilla de 10 de alto dejaba 1.23 de hueco sobre el labio y se
+     veia colgando en el aire por debajo. P.gy = 5 - sy*0.476 = -11.85: el borde
+     inferior de la parrilla apoya en el labio y las barras cubren la boca. */
+  P.gy=5-sy*.476;
  P.lightX=track*.66; P.lightY=DIM.sill+DIM.tyre*.55;
  console.log('[jimny] caja',DIM.halfW.toFixed(2),'x',DIM.height.toFixed(2),'x',(sz*2).toFixed(2),
    '| rueda r='+DIM.tyre.toFixed(2),'via='+P.wx.toFixed(2),'y='+P.wy.toFixed(2));
