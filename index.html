@@ -329,7 +329,16 @@ const gltfLoader=new T.GLTFLoader();
 gltfLoader.setDRACOLoader(draco);
 gltfLoader.load(SHOP.model,gltf=>{
  draco.dispose();
- const m=gltf.scene,box=new T.Box3().setFromObject(m),c=box.getCenter(new T.Vector3());
+ /* jimny.glb trae 30 de sus 95 primitivas en mode:1 (LINES) superpuestas al
+    modelo, con 28 materiales "edge_color*". Es un pase de wireframe que el
+    autor dejó puesto: se ve la malla de polígonos sobre los neumáticos y los
+    asientos. Se quitan ANTES de medir, porque esas líneas también inflan el
+    Box3 y de ahí salen por measure() las posiciones de todos los accesorios. */
+ const quitarLineas=root=>{const fuera=[];
+  root.traverse(o=>{if(o.isLine||o.isLineSegments)fuera.push(o)});
+  fuera.forEach(o=>{if(o.parent)o.parent.remove(o)});};
+ const m=gltf.scene;quitarLineas(m);
+ const box=new T.Box3().setFromObject(m),c=box.getCenter(new T.Vector3());
  m.position.set(-c.x,-c.y,-c.z);
  m.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true;
   const mats=Array.isArray(o.material)?o.material:[o.material];
